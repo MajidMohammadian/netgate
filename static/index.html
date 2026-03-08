@@ -1,0 +1,2098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NetGate</title>
+  <style>
+    @font-face {
+      font-family: 'DM Sans';
+      font-style: normal;
+      font-weight: 400 700;
+      font-display: swap;
+      src: url(/fonts/dm-sans-latin.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: 'DM Sans';
+      font-style: normal;
+      font-weight: 400 700;
+      font-display: swap;
+      src: url(/fonts/dm-sans-latin-ext.woff2) format('woff2');
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    :root {
+      --bg: #f1f5f9;
+      --bg-subtle: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --border-focus: #cbd5e1;
+      --text: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-glow: rgba(37, 99, 235, 0.15);
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --success-dim: #a7f3d0;
+      --error: #dc2626;
+      --error-bg: #fef2f2;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --radius-lg: 18px;
+      --radius-full: 9999px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+      --shadow-lg: 0 10px 40px -10px rgba(0,0,0,0.08);
+      --log-bg: #0f172a;
+      --log-text: #e2e8f0;
+      --log-accent: #38bdf8;
+      --log-line: rgba(255,255,255,0.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-subtle);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .app { max-width: 960px; margin: 0 auto; padding: 2.75rem 1.5rem; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      animation: fadeIn 0.4s ease;
+    }
+    .header-left { flex: 1; min-width: 0; }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .header h1::before {
+      content: '';
+      width: 4px;
+      height: 1.5rem;
+      background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 100%);
+      border-radius: var(--radius-full);
+    }
+    .header p {
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+      margin-top: 0.5rem;
+      margin-left: 0.75rem;
+    }
+    .nav {
+      display: flex;
+      position: relative;
+      flex-shrink: 0;
+      gap: 0;
+      background: transparent;
+      padding: 0;
+      animation: fadeIn 0.4s ease 0.05s both;
+    }
+    .nav::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: var(--border);
+      opacity: 0.6;
+    }
+    .nav-slider {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--primary);
+      border-radius: 2px 2px 0 0;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1;
+    }
+    .nav.active-install .nav-slider { width: calc(100% / 3); transform: translateX(0); }
+    .nav.active-accounts .nav-slider { width: calc(100% / 3); transform: translateX(100%); }
+    .nav.active-panel .nav-slider { width: calc(100% / 3); transform: translateX(200%); }
+    .nav-btn {
+      flex: 1;
+      min-width: 6.2rem;
+      position: relative;
+      z-index: 2;
+      padding: 0.625rem 1rem 0.875rem;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      transition: color 0.2s ease, background 0.2s ease;
+      font-family: inherit;
+    }
+    .nav-btn:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+    .nav-btn.active { color: var(--primary); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .install-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+    .install-step {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem 2rem;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      animation: fadeIn 0.45s ease both;
+    }
+    .install-step:nth-child(2) { animation-delay: 0.08s; }
+    .install-step:nth-child(3) { animation-delay: 0.16s; }
+    .install-step::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary) 0%, transparent 100%);
+      opacity: 0.4;
+    }
+    .step-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+    .step-head {
+      flex: 1;
+    }
+    .install-step-heading {
+      font-size: 1.1875rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.375rem;
+    }
+    .install-step-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .sudo-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      padding: 0.25rem 0.625rem;
+      border-radius: var(--radius-full);
+      margin-top: 0.75rem;
+    }
+    .driver-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+    .driver-card {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .driver-card-inner {
+      display: flex;
+      align-items: center;
+      gap: 1.125rem;
+      flex: 1;
+      min-width: 0;
+      padding: 1.125rem 1.5rem;
+      background: var(--bg);
+      border: 2px solid transparent;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    .driver-card-inner:hover {
+      border-color: var(--border-focus);
+      background: #fff;
+      transform: translateX(4px);
+      box-shadow: var(--shadow);
+    }
+    .driver-card.selected .driver-card-inner { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2); }
+    .driver-card.selected .driver-card-inner::after {
+      content: '';
+      position: absolute;
+      right: 1rem;
+      width: 22px;
+      height: 22px;
+      background: var(--primary);
+      border-radius: 50%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+      background-size: 12px;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    .driver-card.selected .driver-card-badge { margin-right: 1.5rem; }
+    .driver-card-input { display: none; }
+    .driver-card-actions { flex-shrink: 0; }
+    .btn-uninstall {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      font-size: 0.8125rem;
+      padding: 0.5rem 0.875rem;
+    }
+    .btn-uninstall:hover { color: var(--error); border-color: var(--error); background: var(--error-bg); }
+    .btn-uninstall:disabled { opacity: 0.6; cursor: not-allowed; }
+    .driver-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(145deg, var(--primary) 0%, #3b82f6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .driver-card-body { flex: 1; min-width: 0; padding-right: 2rem; }
+    .driver-card-name {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .driver-card-pkgs {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+    .driver-card-badge {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.3125rem 0.625rem;
+      border-radius: var(--radius-full);
+      background: var(--success-bg);
+      color: var(--success);
+      flex-shrink: 0;
+      border: 1px solid var(--success-dim);
+    }
+    .install-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 10px var(--primary-glow);
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--primary-glow);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-primary.running { position: relative; }
+    .btn-primary.running .btn-spinner {
+      width: 1.125rem;
+      height: 1.125rem;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+    }
+    .btn-ghost {
+      background: var(--border);
+      color: var(--text);
+    }
+    .btn-ghost:hover:not(:disabled) {
+      background: #cbd5e1;
+    }
+    .btn-ghost:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8125rem; }
+    .mirror-section { display: flex; flex-direction: column; gap: 1.25rem; }
+    .mirror-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem 1.75rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      position: relative;
+      overflow: hidden;
+    }
+    .mirror-card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+      background: linear-gradient(180deg, var(--primary) 0%, #3b82f6 100%);
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    }
+    .mirror-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .mirror-card-title {
+      font-size: 0.9375rem; font-weight: 700; color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .mirror-card-hint {
+      font-size: 0.8125rem; color: var(--text-muted);
+      padding: 0.2rem 0.5rem; background: var(--bg); border-radius: 6px;
+    }
+    .mirror-inputs { display: flex; flex-direction: column; gap: 0.625rem; margin-bottom: 1.25rem; }
+    .mirror-input-row {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.25rem 0.25rem 0.25rem 0;
+      border-radius: var(--radius-sm);
+      transition: background 0.2s;
+    }
+    .mirror-input-row:hover { background: rgba(0,0,0,0.02); }
+    .mirror-input-row .mirror-url-input { flex: 1; min-width: 0; }
+    .mirror-remove-btn {
+      flex-shrink: 0; width: 34px; height: 34px; padding: 0; border: none; border-radius: 10px;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 1.125rem; line-height: 1; font-weight: 300;
+      transition: color 0.2s, background 0.2s, transform 0.15s;
+    }
+    .mirror-remove-btn:hover:not(:disabled) { color: #fff; background: var(--error); transform: scale(1.05); }
+    .mirror-remove-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .mirror-url-input {
+      width: 100%; max-width: 100%; padding: 0.75rem 1rem;
+      border: 1px solid var(--border); border-radius: 10px;
+      font-size: 0.9375rem; font-family: inherit; background: var(--surface);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .mirror-url-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .mirror-url-input::placeholder { color: var(--text-muted); }
+    .mirror-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .mirror-add-btn {
+      padding: 0.625rem 1.125rem; font-weight: 600; font-size: 0.9375rem;
+      color: var(--primary); background: rgba(37,99,235,0.08);
+      border: 1px solid rgba(37,99,235,0.35); border-radius: 10px;
+      transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+    }
+    .mirror-add-btn:hover {
+      background: rgba(37,99,235,0.14); border-color: var(--primary);
+      color: var(--primary-hover); box-shadow: 0 2px 8px rgba(37,99,235,0.2);
+    }
+    .mirror-check-btn { padding: 0.5rem 1.25rem; font-weight: 600; box-shadow: 0 2px 8px rgba(37,99,235,0.25); }
+    .mirror-check-btn:hover { box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+    .mirror-list-wrap {
+      margin-top: 1.5rem;
+      padding: 0;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
+    .mirror-list-heading { font-size: 0.875rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    .mirror-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+    .mirror-table {
+      width: 100%; border-collapse: collapse; font-size: 0.9375rem;
+      background: var(--bg);
+    }
+    .mirror-table thead th {
+      text-align: left; padding: 0.75rem 1rem;
+      font-weight: 600; color: var(--text-muted);
+      background: rgba(0,0,0,0.03); border-bottom: 1px solid var(--border);
+    }
+    .mirror-table thead th:first-child { border-radius: 10px 0 0 0; width: 72px; }
+    .mirror-table thead th:nth-child(5) { width: 72px; text-align: center; }
+    .mirror-table thead th:last-child { border-radius: 0 10px 0 0; }
+    .mirror-table .remove-cell { padding: 0.5rem 1rem; text-align: center; vertical-align: middle; }
+    .mirror-table .remove-cell .mirror-row-remove { width: 28px; height: 28px; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; transition: color 0.2s, background 0.2s; }
+    .mirror-table .remove-cell .mirror-row-remove:hover { color: #fff; background: var(--error); }
+    .mirror-add-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+    .mirror-add-row .mirror-url-input { flex: 1; min-width: 0; }
+    .mirror-table tbody tr.mirror-result-row {
+      transition: background 0.2s, border-color 0.2s;
+      border-bottom: 1px solid var(--border);
+    }
+    .mirror-table tbody tr.mirror-result-row:last-child { border-bottom: none; }
+    .mirror-table tbody tr.mirror-result-row.reachable { background: var(--bg); }
+    .mirror-table tbody tr.mirror-result-row.reachable.selectable { cursor: pointer; }
+    .mirror-table tbody tr.mirror-result-row.reachable.selectable:hover { background: rgba(37,99,235,0.04); }
+    .mirror-table tbody tr.mirror-result-row.reachable.selected { background: rgba(37,99,235,0.08); }
+    .mirror-table tbody tr.mirror-result-row.unreachable { background: var(--surface); opacity: 0.95; }
+    .mirror-table .status-cell { padding: 0.75rem 1rem; vertical-align: middle; }
+    .mirror-table .status-icon {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700;
+    }
+    .mirror-table .status-icon.reachable { background: var(--success-bg); color: var(--success); }
+    .mirror-table .status-icon.unreachable { background: var(--error-bg); color: var(--error); }
+    .mirror-table .url-cell { padding: 0.75rem 1rem; word-break: break-all; color: var(--text); }
+    .mirror-table .error-cell { padding: 0.75rem 1rem; font-size: 0.75rem; color: var(--text-muted); max-width: 320px; line-height: 1.35; }
+    .mirror-table .select-cell { padding: 0.75rem 1rem; text-align: center; vertical-align: middle; }
+    .mirror-table .select-cell input[type="radio"] { width: 1.125rem; height: 1.125rem; accent-color: var(--primary); cursor: pointer; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .log-wrap {
+      background: var(--log-bg);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .log-header {
+      padding: 0.75rem 1.25rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--log-accent);
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid var(--log-line);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .log-header::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--log-accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--log-accent);
+    }
+    .log-box {
+      font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.65;
+      color: var(--log-text);
+      padding: 1.25rem 1.5rem;
+      height: 280px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      white-space: pre-wrap;
+      word-break: break-all;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.22) rgba(255,255,255,0.06);
+    }
+    .log-box::-webkit-scrollbar {
+      width: 8px;
+    }
+    .log-box::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.06);
+      border-radius: 4px;
+    }
+    .log-box::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.22);
+      border-radius: 4px;
+    }
+    .log-box::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.32);
+    }
+    .log-box::-webkit-scrollbar-thumb:active {
+      background: rgba(255,255,255,0.4);
+    }
+    .log-box:empty::before {
+      content: '› Ready. Select protocols above and click Run install.';
+      color: var(--text-muted);
+      opacity: 0.8;
+    }
+    .log-box.has-content:empty::before {
+      content: '';
+    }
+    .msg {
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 500;
+      animation: fadeIn 0.3s ease;
+    }
+    .msg.ok { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-dim); }
+    .msg.err { background: var(--error-bg); color: var(--error); border: 1px solid #fecaca; }
+    .hidden { display: none !important; }
+    #panelSection { animation: fadeIn 0.35s ease; }
+    .panel-wrap { max-width: var(--content-max); margin: 0 auto; display: flex; flex-direction: column; gap: 1.75rem; }
+    .panel-why {
+      margin-top: 0.75rem; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.55;
+      padding-left: 0.75rem; border-left: 3px solid var(--border);
+    }
+    .panel-link {
+      display: inline-block; margin-top: 0.75rem; font-size: 0.875rem; font-weight: 600; color: var(--primary);
+      text-decoration: none; transition: color 0.2s;
+    }
+    .panel-link:hover { color: var(--primary-hover); text-decoration: underline; }
+    .panel-output-head {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .panel-output-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .btn-proxy { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .btn-proxy-badge { font-size: 0.75rem; color: var(--primary); font-weight: 700; }
+    .btn-proxy-badge.hidden { display: none !important; }
+    .panel-proxy-modal .modal-box { max-width: 22rem; }
+    .panel-proxy-modal .form-block-title { margin-bottom: 0.5rem; }
+    .panel-proxy-desc {
+      font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.55; margin-bottom: 1rem;
+    }
+    .panel-install-loading {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+      background: rgba(37,99,235,0.06); border-radius: 10px; margin-bottom: 1rem;
+      border: 1px solid rgba(37,99,235,0.15);
+    }
+    .panel-install-loading.hidden { display: none !important; }
+    .panel-install-loading-bar {
+      height: 6px; flex: 1; min-width: 120px; border-radius: 3px;
+      background: var(--border); overflow: hidden;
+    }
+    .panel-install-loading-bar::after {
+      content: ''; display: block; height: 100%; width: 40%;
+      background: linear-gradient(90deg, var(--primary), #60a5fa);
+      border-radius: 3px;
+      animation: panelLoading 1.4s ease-in-out infinite;
+    }
+    @keyframes panelLoading {
+      0% { transform: translateX(-100%); }
+      50% { transform: translateX(250%); }
+      100% { transform: translateX(-100%); }
+    }
+    .panel-install-loading-text { font-size: 0.875rem; font-weight: 600; color: var(--primary); }
+    .panel-wrap .log-box:empty::before { content: '› Run Install 3x-ui to see output.'; color: var(--text-muted); opacity: 0.8; }
+    #accountsSection {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border);
+      animation: fadeIn 0.35s ease;
+    }
+    .accounts-driver-tabs {
+      display: flex;
+      gap: 0.375rem;
+      padding: 1rem 1.25rem;
+      background: rgba(241, 245, 249, 0.6);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .accounts-driver-tab {
+      padding: 0.5rem 1.25rem;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .accounts-driver-tab:hover { color: var(--text); background: var(--surface); }
+    .accounts-driver-tab.active { background: var(--primary); color: #fff; }
+    .accounts-empty-protocols {
+      padding: 3.5rem 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+    .accounts-panel { padding: 1.25rem 1.5rem; }
+    .accounts-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 0 0 1.25rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .accounts-toolbar h2 { font-size: 1.375rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+    .accounts-toolbar .accounts-toolbar-desc { font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem; }
+    .btn-add-config {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.625rem 1.25rem; background: var(--primary); color: #fff; border: none;
+      border-radius: var(--radius-sm); font-size: 0.875rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+      transition: background 0.2s, transform 0.15s;
+    }
+    .btn-add-config:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-add-config svg { width: 18px; height: 18px; }
+    .accounts-alert {
+      padding: 0.875rem 1rem; border-radius: var(--radius-sm); font-size: 0.875rem;
+      margin-bottom: 1.25rem; white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow-y: auto;
+    }
+    .accounts-alert.ok { background: var(--success-bg); color: #047857; border: 1px solid var(--success-dim); }
+    .accounts-alert.err { background: var(--error-bg); color: #b91c1b; border: 1px solid #fecaca; }
+    .accounts-empty-state { text-align: center; padding: 3rem 2rem; }
+    .accounts-empty-state .ico { width: 64px; height: 64px; margin: 0 auto 1.25rem; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary); }
+    .accounts-empty-state .ico svg { width: 32px; height: 32px; }
+    .accounts-empty-state h3 { font-size: 1.125rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+    .accounts-empty-state p { font-size: 0.9375rem; color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .accounts-config-cards { display: flex; flex-direction: column; gap: 0.875rem; }
+    .accounts-config-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      transition: border-color 0.2s, box-shadow 0.25s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .accounts-config-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 14px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04); }
+    .accounts-config-card.connected { border-color: rgba(5, 150, 105, 0.35); box-shadow: 0 2px 10px rgba(5, 150, 105, 0.12), 0 1px 3px rgba(0,0,0,0.04); }
+    .accounts-config-card-inner { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; flex-wrap: wrap; }
+    .accounts-config-card-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 1rem; }
+    .accounts-config-card .card-icon { width: 44px; height: 44px; border-radius: var(--radius-sm); background: linear-gradient(145deg, var(--primary) 0%, #3b82f6 100%); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+    .accounts-config-card .card-icon svg { width: 22px; height: 22px; }
+    .accounts-config-card .card-name { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 0.25rem; }
+    .accounts-config-card .card-meta { font-size: 0.8125rem; color: var(--text-secondary); }
+    .accounts-config-card-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .card-actions-primary { display: flex; align-items: center; gap: 0.5rem; }
+    .card-actions-more { position: relative; }
+    .btn-card { display: inline-flex; align-items: center; justify-content: center; padding: 0.45rem 0.95rem; border-radius: var(--radius-sm); font-size: 0.8125rem; font-weight: 600; font-family: inherit; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-card-connect { background: var(--primary); color: #fff; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.22); }
+    .btn-card-connect:hover:not(:disabled) { background: var(--primary-hover); }
+    .btn-card-connect:disabled { opacity: 0.65; cursor: not-allowed; }
+    .btn-card-disconnect { background: var(--text-secondary); color: #fff; }
+    .btn-card-disconnect:hover:not(:disabled) { opacity: 0.9; }
+    .btn-card-disconnect:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-card-more {
+      width: 36px; height: 36px; padding: 0; border-radius: var(--radius-sm);
+      background: var(--border); color: var(--text-secondary);
+      font-size: 1.125rem; line-height: 1;
+    }
+    .btn-card-more:hover { background: #cbd5e1; color: var(--text); }
+    .card-dropdown {
+      position: absolute; right: 0; top: 100%; margin-top: 0.25rem;
+      min-width: 120px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10;
+      padding: 0.25rem;
+    }
+    .card-dropdown-item {
+      display: block; width: 100%; padding: 0.5rem 0.75rem; text-align: left; font-size: 0.8125rem; font-weight: 500;
+      border: none; border-radius: 4px; background: transparent; color: var(--text); cursor: pointer;
+      font-family: inherit;
+    }
+    .card-dropdown-item:hover { background: var(--bg); }
+    .card-dropdown-item.del { color: var(--error); }
+    .card-dropdown-item.del:hover { background: var(--error-bg); }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1.5rem; backdrop-filter: blur(8px); }
+    .modal-overlay:not(.hidden) { display: flex; }
+    .modal-box {
+      position: relative; z-index: 1; background: var(--surface);
+      border-radius: 16px; width: 100%; max-width: 420px; max-height: 90vh; overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05);
+    }
+    .modal-box h3 {
+      padding: 1.375rem 1.5rem; font-size: 1.25rem; font-weight: 600; color: var(--text);
+      background: linear-gradient(180deg, rgba(37,99,235,0.04) 0%, transparent 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .config-form { padding: 0; }
+    .config-form .form-validation {
+      margin: 1rem 1.5rem 0; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #b91c1c;
+      background: rgba(185,28,28,0.08); border-radius: 10px; border: 1px solid rgba(185,28,28,0.2);
+    }
+    .config-form .form-validation.hidden { display: none !important; margin: 0; padding: 0; }
+    .config-form .form-block {
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+    }
+    .config-form .form-block:last-of-type { border-bottom: none; }
+    .config-form .form-block-title {
+      display: flex; align-items: center; gap: 0.5rem; font-size: 0.6875rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 1rem;
+    }
+    .config-form .form-block-title::before {
+      content: ''; width: 3px; height: 12px; background: var(--primary); border-radius: 2px;
+    }
+    .config-form .field { margin-bottom: 1.125rem; }
+    .config-form .field:last-child { margin-bottom: 0; }
+    .config-form .field label {
+      display: block; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary);
+      margin-bottom: 0.5rem; letter-spacing: 0.01em;
+    }
+    .config-form .field input[type="text"],
+    .config-form .field input[type="password"] {
+      width: 100%; padding: 0.75rem 1rem; font-size: 0.9375rem; font-family: inherit;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .config-form .field input::placeholder { color: var(--text-muted); }
+    .config-form .field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    .config-form .field input.error { border-color: var(--error); box-shadow: 0 0 0 2px rgba(185,28,28,0.1); }
+    .config-form .field-password-wrap { position: relative; display: flex; align-items: stretch; }
+    .config-form .field-password-wrap input { padding-right: 3rem; border-radius: 10px; }
+    .config-form .field-password-wrap .pw-toggle {
+      position: absolute; right: 0.375rem; top: 50%; transform: translateY(-50%);
+      width: 2.25rem; height: 2.25rem; padding: 0; border: none; border-radius: 8px;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.2s, background 0.2s;
+    }
+    .config-form .field-password-wrap .pw-toggle:hover { color: var(--primary); background: rgba(37,99,235,0.1); }
+    .config-form .field-password-wrap .pw-toggle svg { width: 1.125rem; height: 1.125rem; }
+    .config-form .field-psk-toggle { margin-top: 0.25rem; }
+    .config-form .checkbox-wrap {
+      display: inline-flex; align-items: center; gap: 0.75rem; cursor: pointer;
+      padding: 0.5rem 0; user-select: none;
+    }
+    .config-form .checkbox-wrap input[type="checkbox"] {
+      width: 1.25rem; height: 1.25rem; margin: 0; flex-shrink: 0;
+      accent-color: var(--primary); cursor: pointer;
+      border-radius: 6px;
+    }
+    .config-form .checkbox-wrap span { font-size: 0.9375rem; font-weight: 500; color: var(--text); }
+    .config-form .field-psk.hidden { display: none !important; }
+    .config-form .modal-footer {
+      padding: 1.25rem 1.5rem; background: var(--bg); border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 0.75rem;
+    }
+    .config-form .btn-modal-ghost {
+      padding: 0.625rem 1.375rem; border-radius: 10px; font-size: 0.9375rem; font-weight: 600;
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      cursor: pointer; transition: background 0.2s, border-color 0.2s;
+    }
+    .config-form .btn-modal-ghost:hover { background: rgba(0,0,0,0.04); border-color: var(--text-muted); }
+    .config-form .btn-modal-primary {
+      padding: 0.625rem 1.375rem; border-radius: 10px; font-size: 0.9375rem; font-weight: 600;
+      background: var(--primary); color: #fff; border: none; cursor: pointer;
+      box-shadow: 0 2px 10px rgba(37,99,235,0.3); transition: background 0.2s, box-shadow 0.2s;
+    }
+    .config-form .btn-modal-primary:hover { background: var(--primary-hover); box-shadow: 0 4px 14px rgba(37,99,235,0.35); }
+
+    .connect-progress-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); display: flex; align-items: center; justify-content: center; z-index: 1001; padding: 1.5rem; backdrop-filter: blur(8px); }
+    .connect-progress-box { background: var(--surface); border-radius: var(--radius-lg); box-shadow: 0 24px 48px rgba(0,0,0,0.2); width: 100%; max-width: 440px; border: 1px solid var(--border); overflow: hidden; }
+    .connect-progress-box h3 { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); font-size: 1.125rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
+    .connect-progress-box h3 .spinner-mini { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.65s linear infinite; }
+    .connect-steps { padding: 1rem 1.5rem; }
+    .connect-step { display: flex; align-items: center; gap: 0.875rem; padding: 0.625rem 0; font-size: 0.875rem; color: var(--text-secondary); transition: color 0.2s; }
+    .connect-step.done { color: var(--success); }
+    .connect-step.active { color: var(--primary); font-weight: 500; }
+    .connect-step .step-icon { width: 24px; height: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--border); color: var(--text-muted); }
+    .connect-step.active .step-icon { background: var(--primary-light); color: var(--primary); }
+    .connect-step.done .step-icon { background: var(--success-bg); color: var(--success); }
+    .connect-step .step-icon svg { width: 14px; height: 14px; }
+    .connect-step .step-icon .spinner-step { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.6s linear infinite; }
+    .connect-step .step-label { font-weight: 500; }
+    .connect-step .step-path { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .connect-progress-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); background: var(--bg); }
+    .connect-progress-footer .log-preview { font-family: 'Consolas', monospace; font-size: 0.75rem; color: var(--text-secondary); max-height: 80px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+    .connect-progress-footer .btn-close-connect { margin-top: 0.75rem; width: 100%; padding: 0.5rem; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.875rem; background: var(--primary); color: #fff; border: none; cursor: pointer; }
+    .connect-progress-footer .btn-close-connect:disabled { opacity: 0.7; cursor: not-allowed; }
+    .connect-progress-footer .btn-close-connect:hover:not(:disabled) { background: var(--primary-hover); }
+    .connect-progress-footer .error-text { font-size: 0.8125rem; color: var(--error); margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-left">
+        <h1>NetGate</h1>
+        <p>Install stacks and manage VPN configs</p>
+      </div>
+      <nav class="nav active-install" role="tablist" id="nav">
+        <span class="nav-slider" aria-hidden="true"></span>
+        <button type="button" class="nav-btn active" id="navInstall" role="tab" aria-selected="true">Install</button>
+        <button type="button" class="nav-btn" id="navAccounts" role="tab" aria-selected="false">Accounts</button>
+        <button type="button" class="nav-btn" id="navPanel" role="tab" aria-selected="false">Panel</button>
+      </nav>
+    </header>
+
+    <section id="installSection" role="tabpanel">
+      <div class="install-wrap">
+        <div id="installMsg" class="msg hidden"></div>
+
+        <div class="install-step">
+          <div class="step-row">
+            <span class="step-num">1</span>
+            <div class="step-head">
+              <h2 class="install-step-heading">Choose protocols to install</h2>
+              <p class="install-step-desc">Select one or more VPN stacks. Packages will be installed from the configured mirror.</p>
+              <span class="sudo-pill">Requires sudo</span>
+            </div>
+          </div>
+          <div id="driverList" class="driver-grid"></div>
+        </div>
+
+        <div class="install-step">
+          <div class="step-row">
+            <span class="step-num">2</span>
+            <div class="step-head">
+              <h2 class="install-step-heading">Choose mirror</h2>
+              <p class="install-step-desc">Add mirror URLs, check which are reachable, then select one for install and uninstall.</p>
+            </div>
+          </div>
+          <div class="mirror-section">
+            <div class="mirror-card">
+              <div class="mirror-card-head">
+                <span class="mirror-card-title">Mirror URLs</span>
+                <span class="mirror-card-hint">Saved in mirrors.json, used for install and uninstall</span>
+              </div>
+              <div class="mirror-add-row">
+                <input type="text" class="mirror-url-input" id="newMirrorInput" placeholder="https://mirror.example.com/">
+                <button type="button" class="btn btn-ghost btn-sm mirror-add-btn" id="mirrorAddBtn">+ Add mirror</button>
+              </div>
+              <div class="mirror-actions">
+                <button type="button" class="btn btn-primary mirror-check-btn" id="mirrorCheckBtn"><span class="btn-text">Check mirrors</span></button>
+              </div>
+            </div>
+          </div>
+          <div class="mirror-list-wrap" id="mirrorListWrap">
+            <p class="mirror-list-heading">Status &amp; select mirror</p>
+            <div class="mirror-table-wrap">
+              <table class="mirror-table" id="mirrorResultsTable">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Mirror URL</th>
+                    <th>Error</th>
+                    <th>Select</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="mirrorResults"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="install-step">
+          <div class="step-row">
+            <span class="step-num">3</span>
+            <div class="step-head">
+              <h2 class="install-step-heading">Run installation</h2>
+              <p class="install-step-desc">Start the process and watch the output below in real time.</p>
+            </div>
+          </div>
+          <div class="install-actions">
+            <button type="button" class="btn btn-primary" id="installBtn">
+              <span class="btn-text">Run install</span>
+            </button>
+            <button type="button" class="btn btn-ghost" id="installCancelBtn" style="display: none;">
+              <span class="btn-text">Cancel</span>
+            </button>
+          </div>
+          <div class="log-wrap">
+            <div class="log-header">Terminal output</div>
+            <div class="log-box" id="installLog"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="panelSection" class="hidden" role="tabpanel">
+      <div class="panel-wrap">
+        <div id="panelMsg" class="msg hidden"></div>
+        <div class="install-step">
+          <div class="step-row">
+            <span class="step-num">1</span>
+            <div class="step-head">
+              <h2 class="install-step-heading">3x-ui Panel</h2>
+              <p class="install-step-desc">Install the 3x-ui web panel for managing Xray-core (Vmess, Vless, Trojan, ShadowSocks, WireGuard and more). Requires root.</p>
+              <p class="panel-why">Use this panel to create and manage proxy users (expiry, traffic, IP limits), configure inbound protocols, and access the Xray web UI from one place. Ideal for running a multi-user proxy or VPN gateway on this server.</p>
+              <a href="https://github.com/MHSanaei/3x-ui" target="_blank" rel="noopener noreferrer" class="panel-link">GitHub – MHSanaei/3x-ui</a>
+            </div>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="panel-output-head">
+            <div class="step-row">
+              <span class="step-num">2</span>
+              <div class="step-head">
+                <h2 class="install-step-heading">Output</h2>
+                <p class="install-step-desc">Installation log appears below.</p>
+              </div>
+            </div>
+            <div class="panel-output-actions">
+              <button type="button" class="btn btn-ghost btn-proxy" id="panelProxyBtn" title="Set proxy for install">
+                <span class="btn-proxy-text">Proxy</span>
+                <span class="btn-proxy-badge hidden" id="panelProxyBadge" aria-hidden="true">✓</span>
+              </button>
+              <button type="button" class="btn btn-primary" id="panelInstallBtn" style="display: none;">
+                <span class="btn-text">Install 3x-ui</span>
+              </button>
+              <button type="button" class="btn btn-ghost" id="panelUninstallBtn" style="display: none;">Uninstall</button>
+              <button type="button" class="btn btn-ghost" id="panelCancelBtn" style="display: none;">Cancel</button>
+            </div>
+          </div>
+          <div class="panel-install-loading hidden" id="panelInstallLoading">
+            <div class="panel-install-loading-bar"></div>
+            <span class="panel-install-loading-text">Installing 3x-ui…</span>
+          </div>
+          <div class="log-wrap">
+            <div class="log-header">Terminal output</div>
+            <div class="log-box" id="panelLog"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="accountsSection" class="hidden" role="tabpanel">
+      <div id="accountsDriverTabs" class="accounts-driver-tabs hidden"></div>
+      <div id="accountsEmptyProtocols" class="accounts-empty-protocols hidden">Install at least one protocol from the Install page to manage its accounts here.</div>
+      <div id="accountsPanel" class="accounts-panel hidden">
+        <div class="accounts-toolbar">
+          <div>
+            <h2>Configs</h2>
+            <p class="accounts-toolbar-desc" id="accountsToolbarDesc">Manage VPN connections</p>
+          </div>
+          <button type="button" class="btn-add-config" id="accountsAddBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add config
+          </button>
+        </div>
+        <div id="accountsAlert" class="accounts-alert hidden"></div>
+        <div id="accountsEmptyState" class="accounts-empty-state hidden">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <h3>No configs yet</h3>
+          <p>Add your first VPN configuration to connect securely.</p>
+          <button type="button" class="btn-add-config" id="accountsEmptyAddBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add config</button>
+        </div>
+        <div id="accountsConfigList" class="accounts-config-cards"></div>
+      </div>
+    </section>
+
+    <div id="configModalOverlay" class="modal-overlay hidden">
+      <div class="modal-box config-form" onclick="event.stopPropagation()">
+        <h3 id="configModalTitle">Add config</h3>
+        <div id="configModalValidation" class="form-validation hidden"></div>
+        <div class="form-block">
+          <div class="form-block-title">Connection</div>
+          <div class="field">
+            <label for="mServerName">Server name</label>
+            <input type="text" id="mServerName" placeholder="e.g. My VPN" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="mServerAddress">Server address</label>
+            <input type="text" id="mServerAddress" placeholder="vpn.example.com or IP" autocomplete="off">
+          </div>
+        </div>
+        <div class="form-block">
+          <div class="form-block-title">Credentials</div>
+          <div class="field">
+            <label for="mUsername">Username</label>
+            <input type="text" id="mUsername" placeholder="Your username" autocomplete="username">
+          </div>
+          <div class="field">
+            <label for="mPassword">Password</label>
+            <div class="field-password-wrap">
+              <input type="password" id="mPassword" placeholder="Your password" autocomplete="current-password">
+              <button type="button" class="pw-toggle" id="mPasswordToggle" title="Show password" aria-label="Show password">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field field-psk-toggle">
+            <label class="checkbox-wrap" for="mUsePsk">
+              <input type="checkbox" id="mUsePsk" checked>
+              <span>Use pre-shared key</span>
+            </label>
+          </div>
+          <div class="field field-psk" id="fieldPsk">
+            <label for="mPsk">Pre-shared key</label>
+            <div class="field-password-wrap">
+              <input type="password" id="mPsk" placeholder="PSK from your provider" autocomplete="off">
+              <button type="button" class="pw-toggle" id="mPskToggle" title="Show key" aria-label="Show pre-shared key">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-ghost" id="configModalCancel">Cancel</button>
+          <button type="button" class="btn-modal-primary" id="configModalSave">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="panelProxyModalOverlay" class="modal-overlay hidden panel-proxy-modal">
+      <div class="modal-box config-form" onclick="event.stopPropagation()">
+        <h3>Proxy for 3x-ui install</h3>
+        <div class="form-block">
+          <div class="form-block-title">Proxy</div>
+          <p class="panel-proxy-desc">Used when installing 3x-ui to reach GitHub. Leave empty if your server can access GitHub directly.</p>
+          <div class="field">
+            <label for="panelProxyInput">Proxy URL (optional)</label>
+            <input type="text" id="panelProxyInput" placeholder="e.g. http://127.0.0.1:7890" autocomplete="off" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-ghost" id="panelProxyModalCancel">Cancel</button>
+          <button type="button" class="btn-modal-primary" id="panelProxyModalSave">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="connectProgressOverlay" class="connect-progress-overlay hidden">
+      <div class="connect-progress-box" onclick="event.stopPropagation()">
+        <h3 id="connectProgressTitle"><span class="spinner-mini"></span> Connecting...</h3>
+        <div class="connect-steps" id="connectStepsList"></div>
+        <div class="connect-progress-footer">
+          <div id="connectLogPreview" class="log-preview hidden"></div>
+          <div id="connectErrorText" class="error-text hidden"></div>
+          <button type="button" class="btn-close-connect" id="connectCloseBtn" disabled>Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function show(el, on) {
+      el.classList.toggle('hidden', !on);
+    }
+    function showInstallMsg(text, isErr) {
+      var m = document.getElementById('installMsg');
+      m.textContent = text;
+      m.className = 'msg ' + (isErr ? 'err' : 'ok');
+      show(m, text ? true : false);
+    }
+
+    var currentTab = 'install';
+
+    function setTab(tab) {
+      currentTab = tab;
+      var isInstall = tab === 'install';
+      var isAccounts = tab === 'accounts';
+      var isPanel = tab === 'panel';
+      show(document.getElementById('installSection'), isInstall);
+      show(document.getElementById('accountsSection'), isAccounts);
+      show(document.getElementById('panelSection'), isPanel);
+      document.getElementById('navInstall').classList.toggle('active', isInstall);
+      document.getElementById('navInstall').setAttribute('aria-selected', isInstall ? 'true' : 'false');
+      document.getElementById('navAccounts').classList.toggle('active', isAccounts);
+      document.getElementById('navAccounts').setAttribute('aria-selected', isAccounts ? 'true' : 'false');
+      document.getElementById('navPanel').classList.toggle('active', isPanel);
+      document.getElementById('navPanel').setAttribute('aria-selected', isPanel ? 'true' : 'false');
+      var navEl = document.getElementById('nav');
+      if (navEl) {
+        navEl.classList.remove('active-install', 'active-accounts', 'active-panel');
+        if (isInstall) navEl.classList.add('active-install');
+        else if (isAccounts) navEl.classList.add('active-accounts');
+        else if (isPanel) navEl.classList.add('active-panel');
+      }
+      if (isInstall) { loadDrivers(); loadMirrors(); }
+      else if (isAccounts) loadAccountsDrivers();
+      else if (isPanel) loadPanelStatus();
+    }
+
+    var selectedDriverId = null;
+
+    function loadAccountsDrivers() {
+      fetch('/api/drivers?t=' + Date.now()).then(function(r) { return r.json(); }).then(function(list) {
+        var installedList = (list || []).filter(function(d) { return d.installed; });
+        var tabsEl = document.getElementById('accountsDriverTabs');
+        var emptyProto = document.getElementById('accountsEmptyProtocols');
+        var panel = document.getElementById('accountsPanel');
+        if (!installedList.length) {
+          show(tabsEl, false);
+          show(emptyProto, true);
+          show(panel, false);
+          selectedDriverId = null;
+          return;
+        }
+        show(emptyProto, false);
+        show(tabsEl, true);
+        show(panel, true);
+        tabsEl.innerHTML = installedList.map(function(d) {
+          var id = d.id || '';
+          var name = d.display_name || id;
+          return '<button type="button" class="accounts-driver-tab" data-id="' + id + '" data-name="' + escapeHtml(name) + '">' + escapeHtml(name) + '</button>';
+        }).join('');
+        var installedIds = installedList.map(function(d) { return d.id; });
+        var toSelect = installedIds.indexOf(selectedDriverId) >= 0 ? selectedDriverId : (installedList[0] && installedList[0].id);
+        selectedDriverId = toSelect || null;
+        tabsEl.querySelectorAll('.accounts-driver-tab').forEach(function(btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-id') === toSelect);
+          btn.onclick = function() {
+            var id = this.getAttribute('data-id');
+            if (id === selectedDriverId) return;
+            selectedDriverId = id;
+            tabsEl.querySelectorAll('.accounts-driver-tab').forEach(function(b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            loadAccountsConfigs();
+          };
+        });
+        loadAccountsConfigs();
+      }).catch(function() {
+        show(document.getElementById('accountsEmptyProtocols'), true);
+        show(document.getElementById('accountsDriverTabs'), false);
+        show(document.getElementById('accountsPanel'), false);
+      });
+    }
+
+    var accountsConfigs = [];
+    var accountsEditingIndex = -1;
+    var connectedCardIndex = null;
+
+    function accountsApiBase() { return selectedDriverId ? '/api/' + selectedDriverId : ''; }
+    function showAccountsMsg(text, isErr) {
+      var m = document.getElementById('accountsAlert');
+      m.textContent = text;
+      m.className = 'accounts-alert ' + (isErr ? 'err' : 'ok');
+      show(m, true);
+    }
+    function loadAccountsConfigs() {
+      var base = accountsApiBase();
+      if (!base) return;
+      fetch(base + '/config').then(function(r) { return r.json(); }).then(function(arr) {
+        accountsConfigs = Array.isArray(arr) ? arr : [];
+        renderAccountsList();
+      }).catch(function() { accountsConfigs = []; renderAccountsList(); });
+    }
+    function renderAccountsList() {
+      var list = document.getElementById('accountsConfigList');
+      var emptyState = document.getElementById('accountsEmptyState');
+      var desc = document.getElementById('accountsToolbarDesc');
+      if (selectedDriverId === 'l2tp') desc.textContent = 'Manage L2TP VPN connections';
+      else desc.textContent = 'Manage VPN connections';
+      if (accountsConfigs.length === 0) {
+        list.innerHTML = '';
+        show(emptyState, true);
+        return;
+      }
+      show(emptyState, false);
+      list.innerHTML = accountsConfigs.map(function(c, i) {
+        var name = c.server_name || 'Unnamed';
+        var meta = [c.server_address, c.username].filter(Boolean).join(' \u2022 ');
+        var isConnected = connectedCardIndex === i;
+        var connectClass = isConnected ? ' hidden' : '';
+        var disconnectClass = isConnected ? '' : ' hidden';
+        return '<div class="accounts-config-card' + (isConnected ? ' connected' : '') + '" data-i="' + i + '">' +
+          '<div class="accounts-config-card-inner">' +
+            '<div class="accounts-config-card-main">' +
+              '<div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>' +
+              '<div><div class="card-name">' + escapeHtml(name) + '</div>' + (meta ? '<div class="card-meta">' + escapeHtml(meta) + '</div>' : '') + '</div>' +
+            '</div>' +
+            '<div class="accounts-config-card-actions">' +
+              '<div class="card-actions-primary">' +
+                '<button type="button" class="btn-card btn-card-connect' + connectClass + '">Connect</button>' +
+                '<button type="button" class="btn-card btn-card-disconnect' + disconnectClass + '">Disconnect</button>' +
+              '</div>' +
+              '<div class="card-actions-more">' +
+                '<button type="button" class="btn-card btn-card-more" aria-haspopup="true" title="More">&#8942;</button>' +
+                '<div class="card-dropdown hidden">' +
+                  '<button type="button" class="card-dropdown-item" data-action="edit">Edit</button>' +
+                  '<button type="button" class="card-dropdown-item del" data-action="delete">Delete</button>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div></div>';
+      }).join('');
+      list.querySelectorAll('.btn-card-connect').forEach(function(btn) {
+        btn.onclick = function() {
+          if (this.disabled) return;
+          var i = parseInt(btn.closest('.accounts-config-card').dataset.i, 10);
+          var c = accountsConfigs[i];
+          var el = this;
+          el.disabled = true;
+          var oldText = el.textContent;
+          el.textContent = 'Connecting...';
+          runConnectWithProgress(c, el, function(ok, err, log) {
+            el.disabled = false;
+            el.textContent = 'Connect';
+            if (ok !== undefined) {
+              if (ok) {
+                connectedCardIndex = i;
+                var card = el.closest('.accounts-config-card');
+                card.classList.add('connected');
+                card.querySelector('.btn-card-connect').classList.add('hidden');
+                card.querySelector('.btn-card-disconnect').classList.remove('hidden');
+                showAccountsMsg(log ? 'Connected.\n\n' + log : 'Connected.', false);
+              } else showAccountsMsg(err || 'Connection failed.', true);
+            }
+          });
+        };
+      });
+      list.querySelectorAll('.btn-card-disconnect').forEach(function(btn) {
+        btn.onclick = function() {
+          if (this.disabled) return;
+          var el = this;
+          var card = el.closest('.accounts-config-card');
+          var i = parseInt(card.dataset.i, 10);
+          el.disabled = true;
+          var oldText = el.textContent;
+          el.textContent = 'Disconnecting...';
+          showAccountsMsg('Disconnecting...', false);
+          fetch(accountsApiBase() + '/disconnect', { method: 'POST' })
+            .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d || {} }; }).catch(function() { return { ok: false, d: {} }; }); })
+            .then(function(o) {
+              if (o.ok) {
+                connectedCardIndex = null;
+                card.classList.remove('connected');
+                card.querySelector('.btn-card-connect').classList.remove('hidden');
+                card.querySelector('.btn-card-disconnect').classList.add('hidden');
+                showAccountsMsg('Disconnected.', false);
+              } else showAccountsMsg((o.d && o.d.error) || 'Disconnect failed.', true);
+            })
+            .catch(function() { showAccountsMsg('Disconnect failed.', true); })
+            .finally(function() { el.disabled = false; el.textContent = oldText; });
+        };
+      });
+      list.querySelectorAll('.btn-card-more').forEach(function(btn) {
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          var dd = this.nextElementSibling;
+          var open = !dd.classList.contains('hidden');
+          list.querySelectorAll('.card-dropdown').forEach(function(d) { d.classList.add('hidden'); });
+          if (!open) {
+            dd.classList.remove('hidden');
+            var closeAll = function() {
+              list.querySelectorAll('.card-dropdown').forEach(function(d) { d.classList.add('hidden'); });
+              document.removeEventListener('click', closeAll);
+            };
+            document.addEventListener('click', closeAll);
+          }
+        };
+      });
+      list.querySelectorAll('.card-dropdown').forEach(function(dd) {
+        dd.onclick = function(e) { e.stopPropagation(); };
+      });
+      list.querySelectorAll('.card-dropdown-item').forEach(function(btn) {
+        btn.onclick = function() {
+          var card = this.closest('.accounts-config-card');
+          var i = parseInt(card.dataset.i, 10);
+          var action = this.getAttribute('data-action');
+          card.querySelector('.card-dropdown').classList.add('hidden');
+          if (action === 'edit') setTimeout(function() { openConfigModal(i); }, 0);
+          else if (action === 'delete') {
+            if (confirm('Delete this config?')) {
+              if (connectedCardIndex === i) connectedCardIndex = null;
+              else if (connectedCardIndex != null && connectedCardIndex > i) connectedCardIndex--;
+              accountsConfigs.splice(i, 1);
+              saveAccountsConfigs('Config deleted.');
+              renderAccountsList();
+            }
+          }
+        };
+      });
+    }
+    function openConfigModal(index) {
+      var connectOverlay = document.getElementById('connectProgressOverlay');
+      if (connectOverlay && !connectOverlay.classList.contains('hidden')) show(connectOverlay, false);
+      accountsEditingIndex = index;
+      document.getElementById('configModalTitle').textContent = index >= 0 ? 'Edit config' : 'Add config';
+      var c = index >= 0 ? accountsConfigs[index] : {};
+      document.getElementById('mServerName').value = c.server_name || '';
+      document.getElementById('mServerAddress').value = c.server_address || '';
+      document.getElementById('mUsername').value = c.username || '';
+      document.getElementById('mPassword').value = c.password || '';
+      document.getElementById('mPsk').value = c.pre_shared_key || '';
+      var usePsk = c.use_pre_shared_key !== false;
+      document.getElementById('mUsePsk').checked = usePsk;
+      document.getElementById('fieldPsk').classList.toggle('hidden', !usePsk);
+      var v = document.getElementById('configModalValidation');
+      v.textContent = '';
+      show(v, false);
+      ['mServerName','mServerAddress','mUsername','mPassword','mPsk'].forEach(function(id) { var el = document.getElementById(id); if (el) el.classList.remove('error'); });
+      show(document.getElementById('configModalOverlay'), true);
+    }
+    function closeConfigModal() {
+      show(document.getElementById('configModalOverlay'), false);
+      accountsEditingIndex = -1;
+    }
+    function saveConfigModal() {
+      var name = document.getElementById('mServerName').value.trim();
+      var address = document.getElementById('mServerAddress').value.trim();
+      var user = document.getElementById('mUsername').value.trim();
+      var pass = document.getElementById('mPassword').value;
+      var usePsk = document.getElementById('mUsePsk').checked;
+      var psk = document.getElementById('mPsk').value;
+      var missing = [];
+      if (!name) missing.push('Server name');
+      if (!address) missing.push('Server address');
+      if (!user) missing.push('Username');
+      if (!pass) missing.push('Password');
+      if (usePsk && !psk) missing.push('Pre-shared key');
+      if (missing.length) {
+        var v = document.getElementById('configModalValidation');
+        v.textContent = 'Please fill: ' + missing.join(', ');
+        show(v, true);
+        if (!name) document.getElementById('mServerName').classList.add('error');
+        if (!address) document.getElementById('mServerAddress').classList.add('error');
+        if (!user) document.getElementById('mUsername').classList.add('error');
+        if (!pass) document.getElementById('mPassword').classList.add('error');
+        if (usePsk && !psk) document.getElementById('mPsk').classList.add('error');
+        return;
+      }
+      var c = { server_name: name, server_address: address, username: user, password: pass, use_pre_shared_key: usePsk, pre_shared_key: usePsk ? psk : '' };
+      if (accountsEditingIndex >= 0) accountsConfigs[accountsEditingIndex] = c;
+      else accountsConfigs.push(c);
+      saveAccountsConfigs(accountsEditingIndex >= 0 ? 'Config updated.' : 'Config added.');
+      renderAccountsList();
+      closeConfigModal();
+    }
+    function saveAccountsConfigs(successMsg, errorMsg) {
+      successMsg = successMsg || 'Saved.';
+      errorMsg = errorMsg || 'Save failed.';
+      fetch(accountsApiBase() + '/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(accountsConfigs) })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }).catch(function() { return { ok: false, d: {} }; }); })
+        .then(function(o) { showAccountsMsg(o.ok ? successMsg : (o.d && o.d.error) || errorMsg, !o.ok); })
+        .catch(function() { showAccountsMsg(errorMsg, true); });
+    }
+
+    function checkReady() {
+      fetch('/api/ready').then(function(r) { return r.json(); }).then(function(d) {
+        if (d.ready) setTab('accounts');
+        else setTab('install');
+      }).catch(function() {
+        setTab('install');
+        loadDrivers();
+      });
+    }
+
+    function loadDrivers() {
+      return fetch('/api/drivers?t=' + Date.now()).then(function(r) { return r.json(); }).then(function(list) {
+        var el = document.getElementById('driverList');
+        if (!list || list.length === 0) { el.innerHTML = ''; return; }
+        el.innerHTML = list.map(function(d) {
+          var id = d.id || '';
+          var name = d.display_name || id;
+          var pkgs = (d.packages || []).join(', ');
+          var initial = (name.charAt(0) || '?').toUpperCase();
+          var installed = d.installed;
+          var cardId = 'driver-' + id;
+          var nameEsc = escapeHtml(name);
+          return '<div class="driver-card" data-id="' + id + '">' +
+            '<label class="driver-card-inner" for="' + cardId + '">' +
+              '<input type="checkbox" class="driver-card-input" name="driver" value="' + id + '" id="' + cardId + '">' +
+              '<span class="driver-card-icon">' + initial + '</span>' +
+              '<div class="driver-card-body">' +
+                '<div class="driver-card-name">' + nameEsc + '</div>' +
+                (pkgs ? '<div class="driver-card-pkgs">' + escapeHtml(pkgs) + '</div>' : '') +
+              '</div>' +
+              (installed ? '<span class="driver-card-badge">Installed</span>' : '') +
+            '</label>' +
+            (installed ? '<div class="driver-card-actions"><button type="button" class="btn btn-uninstall" data-id="' + id + '" data-name="' + nameEsc + '">Uninstall</button></div>' : '') +
+          '</div>';
+        }).join('');
+        el.querySelectorAll('.driver-card').forEach(function(wrapper) {
+          var input = wrapper.querySelector('input');
+          if (!input) return;
+          wrapper.classList.toggle('selected', input.checked);
+          input.addEventListener('change', function() {
+            wrapper.classList.toggle('selected', input.checked);
+          });
+          var uninstallBtn = wrapper.querySelector('.btn-uninstall');
+          if (uninstallBtn) {
+            uninstallBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              var id = this.getAttribute('data-id');
+              var name = this.getAttribute('data-name') || id;
+              if (!confirm('Remove ' + name + ' and all its packages from this system? Config files may be removed.')) return;
+              var log = document.getElementById('installLog');
+              log.textContent = '';
+              log.classList.add('has-content');
+              this.disabled = true;
+              showInstallMsg('Uninstalling ' + name + '...', false);
+              fetch('/api/uninstall', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drivers: [id], mirror: selectedMirrorUrl || '' }) }).then(function(r) {
+                if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Uninstall failed'); });
+                var reader = r.body.getReader();
+                var decoder = new TextDecoder();
+                var buf = '';
+                function read() {
+                  reader.read().then(function(res) {
+                    if (res.done) {
+                      showInstallMsg(name + ' uninstalled successfully.', false);
+                      loadDrivers();
+                      return;
+                    }
+                    buf += decoder.decode(res.value, { stream: true });
+                    var lines = buf.split('\n');
+                    buf = lines.pop();
+                    var done = false;
+                    lines.forEach(function(line) {
+                      if (line.startsWith('data: ')) {
+                        var data = (line.slice(6) || '').trim().replace(/\r$/, '');
+                        if (data === '[DONE]') {
+                          done = true;
+                          showInstallMsg(name + ' uninstalled successfully.', false);
+                          loadDrivers();
+                          return;
+                        }
+                        if (data.indexOf('error: ') === 0) {
+                          done = true;
+                          showInstallMsg(data.slice(7), true);
+                          loadDrivers();
+                          return;
+                        }
+                        log.textContent += data + '\n';
+                        log.scrollTop = log.scrollHeight;
+                      }
+                    });
+                    if (!done) read();
+                  }).catch(function(err) {
+                    showInstallMsg(err.message || 'Uninstall failed', true);
+                    loadDrivers();
+                  });
+                }
+                read();
+              }).catch(function(err) {
+                showInstallMsg(err.message || 'Uninstall failed', true);
+                loadDrivers();
+              }).finally(function() { uninstallBtn.disabled = false; });
+            });
+          }
+        });
+      }).catch(function() { document.getElementById('driverList').innerHTML = ''; });
+    }
+    function escapeHtml(s) {
+      if (!s) return '';
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    var selectedMirrorUrl = '';
+    var lastActiveMirrorUrls = [];
+    var mirrorList = [];
+    var lastCheckResults = [];
+
+    function loadMirrors() {
+      fetch('/api/mirrors')
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('Failed to load mirrors')); })
+        .then(function(data) {
+          mirrorList = data.mirrors || [];
+          renderMirrorTable();
+        })
+        .catch(function() { mirrorList = []; renderMirrorTable(); });
+    }
+
+    function saveMirrors(list, done) {
+      fetch('/api/mirrors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mirrors: list }) })
+        .then(function(r) { if (!r.ok) throw new Error('Save failed'); return done && done(); })
+        .catch(function(e) { if (done) done(e); showInstallMsg(e.message || 'Failed to save mirrors.', true); });
+    }
+
+    function renderMirrorTable() {
+      var resultsEl = document.getElementById('mirrorResults');
+      if (mirrorList.length === 0) {
+        resultsEl.innerHTML = '<tr><td colspan="5" class="url-cell" style="text-align:center;color:var(--text-muted);padding:1.5rem;">No mirrors saved. Add a URL above and click Add mirror.</td></tr>';
+        return;
+      }
+      var resultByUrl = {};
+      lastCheckResults.forEach(function(r) { resultByUrl[r.url] = r; });
+      resultsEl.innerHTML = mirrorList.map(function(url) {
+        var res = resultByUrl[url];
+        var reachable = res ? res.active : null;
+        var rowClass = reachable === true ? 'reachable selectable' : (reachable === false ? 'unreachable' : '');
+        var iconClass = reachable === true ? 'reachable' : (reachable === false ? 'unreachable' : '');
+        var icon = reachable === true ? '\u2713' : (reachable === false ? '\u2717' : '\u2014');
+        var errText = (res && res.error) ? escapeHtml(res.error) : '\u2014';
+        var radioHtml = reachable === true ? '<input type="radio" name="installMirror" data-url="' + escapeHtml(url) + '">' : '';
+        return '<tr class="mirror-result-row ' + rowClass + '" data-url="' + escapeHtml(url) + '">' +
+          '<td class="status-cell"><span class="status-icon ' + iconClass + '">' + icon + '</span></td>' +
+          '<td class="url-cell">' + escapeHtml(url) + '</td>' +
+          '<td class="error-cell">' + errText + '</td>' +
+          '<td class="select-cell">' + radioHtml + '</td>' +
+          '<td class="remove-cell"><button type="button" class="mirror-row-remove" title="Remove">\u00D7</button></td></tr>';
+      }).join('');
+      resultsEl.querySelectorAll('.mirror-result-row.reachable').forEach(function(row) {
+        var radio = row.querySelector('input[name="installMirror"]');
+        if (radio) {
+          radio.onchange = function() {
+            selectedMirrorUrl = this.getAttribute('data-url') || '';
+            resultsEl.querySelectorAll('.mirror-result-row.reachable').forEach(function(r) { r.classList.remove('selected'); });
+            this.closest('.mirror-result-row').classList.add('selected');
+          };
+          row.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'INPUT' && !e.target.classList.contains('mirror-row-remove')) { radio.checked = true; selectedMirrorUrl = radio.getAttribute('data-url') || ''; resultsEl.querySelectorAll('.mirror-result-row.reachable').forEach(function(r) { r.classList.remove('selected'); }); row.classList.add('selected'); }
+          });
+        }
+      });
+      resultsEl.querySelectorAll('.mirror-row-remove').forEach(function(btn) {
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          var row = this.closest('.mirror-result-row');
+          var url = row ? row.getAttribute('data-url') : '';
+          if (!url) return;
+          var next = mirrorList.filter(function(u) { return u !== url; });
+          mirrorList = next;
+          saveMirrors(next, function() { lastCheckResults = lastCheckResults.filter(function(r) { return r.url !== url; }); renderMirrorTable(); });
+        };
+      });
+      if (lastCheckResults.length > 0 && lastActiveMirrorUrls.length > 0) {
+        var firstRadio = resultsEl.querySelector('.mirror-result-row.reachable input[name="installMirror"]');
+        if (firstRadio && !resultsEl.querySelector('.mirror-result-row.reachable.selected')) {
+          firstRadio.checked = true;
+          selectedMirrorUrl = firstRadio.getAttribute('data-url') || '';
+          var firstRow = firstRadio.closest('.mirror-result-row');
+          if (firstRow) firstRow.classList.add('selected');
+        }
+      }
+    }
+
+    document.getElementById('mirrorAddBtn').onclick = function() {
+      var inp = document.getElementById('newMirrorInput');
+      var u = (inp && inp.value || '').trim();
+      if (!u) { showInstallMsg('Enter a mirror URL.', true); return; }
+      if (mirrorList.indexOf(u) >= 0) { showInstallMsg('URL already in list.', true); return; }
+      showInstallMsg('', false);
+      mirrorList = mirrorList.concat(u);
+      inp.value = '';
+      saveMirrors(mirrorList, function() { renderMirrorTable(); });
+    };
+
+    document.getElementById('mirrorCheckBtn').onclick = function() {
+      var btn = this;
+      var resultsEl = document.getElementById('mirrorResults');
+      if (mirrorList.length === 0) {
+        showInstallMsg('Add at least one mirror URL first.', true);
+        return;
+      }
+      showInstallMsg('', false);
+      btn.disabled = true;
+      btn.querySelector('.btn-text').textContent = 'Checking...';
+      fetch('/api/mirrors/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mirrors: mirrorList }) })
+        .then(function(r) {
+          if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Check failed'); });
+          return r.json();
+        })
+        .then(function(data) {
+          lastCheckResults = data.results || [];
+          lastActiveMirrorUrls = lastCheckResults.filter(function(r) { return r.active; }).map(function(r) { return r.url; });
+          renderMirrorTable();
+          if (lastActiveMirrorUrls.length === 0) showInstallMsg('No mirror is reachable. Check URLs and try again.', true);
+        })
+        .catch(function(e) { showInstallMsg(e.message || 'Failed to check mirrors.', true); })
+        .finally(function() { btn.disabled = false; btn.querySelector('.btn-text').textContent = 'Check mirrors'; });
+    };
+
+    var installAbortController = null;
+    var lastSelectedDriverIds = [];
+    function restoreDriverSelection() {
+      if (!lastSelectedDriverIds.length) return;
+      lastSelectedDriverIds.forEach(function(id) {
+        var cb = document.querySelector('#driverList input[name="driver"][value="' + id + '"]');
+        if (cb) {
+          cb.checked = true;
+          var card = cb.closest('.driver-card');
+          if (card) card.classList.add('selected');
+        }
+      });
+    }
+    var installDone = function(btn, cancelBtn) {
+      btn.disabled = false;
+      btn.classList.remove('running');
+      var t = btn.querySelector('.btn-text');
+      if (t) t.textContent = 'Run install';
+      var sp = btn.querySelector('.btn-spinner');
+      if (sp) sp.remove();
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      lastSelectedDriverIds = [];
+      document.querySelectorAll('#driverList input[name="driver"]').forEach(function(cb) { cb.checked = false; });
+      document.querySelectorAll('#driverList .driver-card.selected').forEach(function(card) { card.classList.remove('selected'); });
+      loadDrivers();
+    };
+    document.getElementById('installBtn').onclick = function() {
+      var btn = this;
+      var cancelBtn = document.getElementById('installCancelBtn');
+      var log = document.getElementById('installLog');
+      try {
+        var selected = [];
+        document.querySelectorAll('#driverList input[name="driver"]:checked').forEach(function(cb) { selected.push(cb.value); });
+        if (selected.length === 0) {
+          showInstallMsg('Select at least one protocol to install.', true);
+          return;
+        }
+        lastSelectedDriverIds = selected.slice();
+        var mirrorToUse = selectedMirrorUrl || '';
+        if (!mirrorToUse) {
+          var checkedMirror = document.querySelector('#mirrorListWrap input[name="installMirror"]:checked');
+          if (checkedMirror) mirrorToUse = checkedMirror.getAttribute('data-url') || '';
+        }
+        showInstallMsg('', false);
+        log.textContent = '';
+        log.classList.add('has-content');
+        btn.disabled = true;
+        btn.classList.add('running');
+        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+        var textEl = btn.querySelector('.btn-text');
+        if (textEl) textEl.textContent = 'Installing…';
+        var spinner = document.createElement('span');
+        spinner.className = 'btn-spinner';
+        btn.appendChild(spinner);
+        installAbortController = new AbortController();
+        var signal = installAbortController.signal;
+        fetch('/api/install', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drivers: selected, mirror: mirrorToUse }), signal: signal }).then(function(r) {
+          if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Install failed'); });
+          var reader = r.body.getReader();
+        var decoder = new TextDecoder();
+        var buf = '';
+        function done() {
+          installDone(btn, cancelBtn);
+        }
+        function read() {
+          reader.read().then(function(res) {
+            if (res.done) { done(); return; }
+            buf += decoder.decode(res.value, { stream: true });
+            var lines = buf.split('\n');
+            buf = lines.pop();
+            lines.forEach(function(line) {
+              if (line.startsWith('data: ')) {
+                var data = line.slice(6);
+                if (data === '[DONE]') { done(); return; }
+                if (data.indexOf('error: ') === 0) {
+                  var errText = data.slice(7);
+                  if (errText.indexOf('exit status') !== -1) errText = 'Install failed. Check the log above for details.';
+                  showInstallMsg(errText, true);
+                  done();
+                  return;
+                }
+                if (data === 'Install cancelled.') {
+                  log.textContent += 'Install cancelled.\n';
+                  log.scrollTop = log.scrollHeight;
+                  showInstallMsg('Install cancelled.', false);
+                  done();
+                  return;
+                }
+                log.textContent += data + '\n';
+                log.scrollTop = log.scrollHeight;
+              }
+            });
+            read();
+          }).catch(function(e) {
+            if (e.name === 'AbortError') {
+              showInstallMsg('Install cancelled.', false);
+            } else {
+              showInstallMsg(e.message || 'Install failed', true);
+            }
+            done();
+          });
+        }
+        read();
+      }).catch(function(e) {
+          if (e.name === 'AbortError') {
+            showInstallMsg('Install cancelled.', false);
+          } else {
+            showInstallMsg(e.message || 'Install failed', true);
+          }
+          installDone(btn, cancelBtn);
+        });
+      } catch (err) {
+        showInstallMsg(err.message || 'Install failed', true);
+        installDone(btn, cancelBtn);
+      }
+    };
+    document.getElementById('installCancelBtn').onclick = function() {
+      var btn = document.getElementById('installBtn');
+      var cancelBtn = this;
+      if (installAbortController) {
+        cancelBtn.disabled = true;
+        fetch('/api/install/cancel', { method: 'POST' }).then(function() {
+          installAbortController.abort();
+        }).catch(function() {
+          installAbortController.abort();
+        }).finally(function() {
+          cancelBtn.disabled = false;
+        });
+      }
+    };
+
+    document.getElementById('navInstall').onclick = function() { setTab('install'); };
+    document.getElementById('navAccounts').onclick = function() { setTab('accounts'); };
+    document.getElementById('navPanel').onclick = function() { setTab('panel'); };
+
+    var panelAbortController = null;
+    function showPanelMsg(text, isErr) {
+      var m = document.getElementById('panelMsg');
+      m.textContent = text;
+      m.className = 'msg ' + (isErr ? 'err' : 'ok');
+      show(m, text ? true : false);
+    }
+    function updatePanelProxyBadge() {
+      var proxyInput = document.getElementById('panelProxyInput');
+      var badge = document.getElementById('panelProxyBadge');
+      if (badge) badge.classList.toggle('hidden', !(proxyInput && proxyInput.value.trim()));
+    }
+    function loadPanelStatus() {
+      var installBtn = document.getElementById('panelInstallBtn');
+      var uninstallBtn = document.getElementById('panelUninstallBtn');
+      var cancelBtn = document.getElementById('panelCancelBtn');
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      updatePanelProxyBadge();
+      fetch('/api/panel/status').then(function(r) { return r.json(); }).then(function(d) {
+        if (installBtn) installBtn.style.display = d.installed ? 'none' : 'inline-flex';
+        if (uninstallBtn) uninstallBtn.style.display = d.installed ? 'inline-flex' : 'none';
+      }).catch(function() {
+        if (installBtn) installBtn.style.display = 'inline-flex';
+        if (uninstallBtn) uninstallBtn.style.display = 'none';
+      });
+    }
+    function panelInstallDone(btn, cancelBtn) {
+      if (btn) { btn.disabled = false; var t = btn.querySelector('.btn-text'); if (t) t.textContent = 'Install 3x-ui'; }
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      var loadingEl = document.getElementById('panelInstallLoading');
+      if (loadingEl) loadingEl.classList.add('hidden');
+      loadPanelStatus();
+    }
+    document.getElementById('panelInstallBtn').onclick = function() {
+      var btn = this;
+      var cancelBtn = document.getElementById('panelCancelBtn');
+      var log = document.getElementById('panelLog');
+      showPanelMsg('', false);
+      log.textContent = '';
+      log.classList.add('has-content');
+      btn.disabled = true;
+      btn.querySelector('.btn-text').textContent = 'Installing…';
+      if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+      var loadingEl = document.getElementById('panelInstallLoading');
+      if (loadingEl) loadingEl.classList.remove('hidden');
+      panelAbortController = new AbortController();
+      var proxyInput = document.getElementById('panelProxyInput');
+      var proxyUrl = (proxyInput && proxyInput.value) ? proxyInput.value.trim() : '';
+      fetch('/api/panel/install', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proxy: proxyUrl }),
+        signal: panelAbortController.signal
+      })
+        .then(function(r) {
+          if (!r.ok) return r.json().then(function(d) { throw new Error((d && d.error) || 'Install failed'); });
+          var reader = r.body.getReader();
+          var decoder = new TextDecoder();
+          var buf = '';
+          var finished = false;
+          function done() {
+            if (finished) return;
+            finished = true;
+            panelInstallDone(btn, cancelBtn);
+          }
+          function read() {
+            if (finished) return;
+            reader.read().then(function(res) {
+              if (finished) return;
+              if (res.done) { done(); return; }
+              buf += decoder.decode(res.value, { stream: true });
+              var lines = buf.split('\n');
+              buf = lines.pop();
+              for (var i = 0; i < lines.length && !finished; i++) {
+                var line = lines[i];
+                if (!line.startsWith('data: ')) continue;
+                var data = line.slice(6);
+                if (data === '[DONE]') { done(); return; }
+                if (data.indexOf('error: ') === 0) {
+                  showPanelMsg(data.slice(7), true);
+                  done();
+                  return;
+                }
+                if (data === 'Panel install cancelled.') {
+                  log.textContent += data + '\n';
+                  log.scrollTop = log.scrollHeight;
+                  showPanelMsg('Panel install cancelled.', false);
+                  done();
+                  return;
+                }
+                log.textContent += data + '\n';
+                log.scrollTop = log.scrollHeight;
+              }
+              read();
+            }).catch(function(e) {
+              if (e.name !== 'AbortError') showPanelMsg(e.message || 'Install failed', true);
+              else showPanelMsg('Panel install cancelled.', false);
+              done();
+            });
+          }
+          read();
+        })
+        .catch(function(e) {
+          if (e.name !== 'AbortError') showPanelMsg(e.message || 'Install failed', true);
+          else showPanelMsg('Panel install cancelled.', false);
+          panelInstallDone(btn, cancelBtn);
+        });
+    };
+    document.getElementById('panelCancelBtn').onclick = function() {
+      var btn = document.getElementById('panelInstallBtn');
+      var cancelBtn = this;
+      if (panelAbortController) {
+        cancelBtn.disabled = true;
+        fetch('/api/panel/install/cancel', { method: 'POST' }).then(function() {
+          panelAbortController.abort();
+        }).catch(function() { panelAbortController.abort(); }).finally(function() { cancelBtn.disabled = false; });
+      }
+    };
+    document.getElementById('panelUninstallBtn').onclick = function() {
+      if (!confirm('Uninstall 3x-ui panel? This will remove the panel and its data from this server.')) return;
+      var btn = this;
+      var log = document.getElementById('panelLog');
+      showPanelMsg('', false);
+      log.textContent = '';
+      log.classList.add('has-content');
+      btn.disabled = true;
+      fetch('/api/panel/uninstall', { method: 'POST' })
+        .then(function(r) {
+          if (!r.ok) return r.json().then(function(d) { throw new Error((d && d.error) || 'Uninstall failed'); });
+          var reader = r.body.getReader();
+          var decoder = new TextDecoder();
+          var buf = '';
+          var finished = false;
+          function done() {
+            if (finished) return;
+            finished = true;
+            btn.disabled = false;
+            loadPanelStatus();
+          }
+          function read() {
+            if (finished) return;
+            reader.read().then(function(res) {
+              if (finished) return;
+              if (res.done) { done(); return; }
+              buf += decoder.decode(res.value, { stream: true });
+              var lines = buf.split('\n');
+              buf = lines.pop();
+              for (var i = 0; i < lines.length && !finished; i++) {
+                var line = lines[i];
+                if (!line.startsWith('data: ')) continue;
+                var data = line.slice(6);
+                if (data === '[DONE]') { done(); return; }
+                if (data.indexOf('error: ') === 0) { showPanelMsg(data.slice(7), true); done(); return; }
+                log.textContent += data + '\n';
+                log.scrollTop = log.scrollHeight;
+              }
+              read();
+            }).catch(function(e) { showPanelMsg(e.message || 'Uninstall failed', true); done(); });
+          }
+          read();
+        })
+        .catch(function(e) { showPanelMsg(e.message || 'Uninstall failed', true); btn.disabled = false; loadPanelStatus(); });
+    };
+
+    var connectStepsDef = [
+      { id: 'ensure_services', label: 'Ensure VPN services running', path: 'strongswan-starter, xl2tpd' },
+      { id: 'ipsec_secrets', label: 'Write IPsec secrets', path: '/etc/ipsec.secrets' },
+      { id: 'xl2tpd_conf', label: 'Write xl2tpd config', path: '/etc/xl2tpd/xl2tpd.conf' },
+      { id: 'ipsec_conf', label: 'Write IPsec config', path: '/etc/ipsec.conf' },
+      { id: 'ppp_options', label: 'Write PPP options', path: '/etc/ppp/options.l2tpd.client' },
+      { id: 'connect_script', label: 'Write connection script', path: '/usr/local/bin/l2tp-connect.sh' },
+      { id: 'run_script', label: 'Run connection script', path: '' }
+    ];
+    function renderConnectSteps(state) {
+      state = state || {};
+      var list = document.getElementById('connectStepsList');
+      list.innerHTML = connectStepsDef.map(function(s, idx) {
+        var st = state[s.id];
+        var status = st === 'done' ? 'done' : (st === 'active' ? 'active' : '');
+        var path = s.path || (s.id === 'run_script' ? 'Starting tunnel...' : s.path);
+        var icon = st === 'done' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : (st === 'active' ? '<span class="spinner-step"></span>' : '<span style="opacity:0.4">' + (idx + 1) + '</span>');
+        return '<div class="connect-step ' + status + '" data-step="' + s.id + '">' +
+          '<div class="step-icon">' + icon + '</div>' +
+          '<div><div class="step-label">' + escapeHtml(s.label) + '</div>' + (path ? '<div class="step-path">' + escapeHtml(path) + '</div>' : '') + '</div></div>';
+      }).join('');
+    }
+    function openConnectProgress(config) {
+      document.getElementById('connectProgressTitle').innerHTML = '<span class="spinner-mini"></span> Connecting to ' + escapeHtml(config.server_name || config.server_address || 'VPN') + '...';
+      document.getElementById('connectLogPreview').classList.add('hidden');
+      document.getElementById('connectLogPreview').textContent = '';
+      document.getElementById('connectErrorText').classList.add('hidden');
+      document.getElementById('connectErrorText').textContent = '';
+      document.getElementById('connectCloseBtn').disabled = true;
+      renderConnectSteps({});
+      show(document.getElementById('connectProgressOverlay'), true);
+    }
+    function setConnectStepDone(stepId, path) {
+      var list = document.getElementById('connectStepsList');
+      var steps = list.querySelectorAll('.connect-step');
+      var found = false;
+      for (var i = 0; i < steps.length; i++) {
+        var el = steps[i];
+        var id = el.getAttribute('data-step');
+        el.classList.remove('active');
+        if (id === stepId) {
+          el.classList.add('done');
+          el.querySelector('.step-icon').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+          if (path && el.querySelector('.step-path')) el.querySelector('.step-path').textContent = path;
+          found = true;
+        } else if (!found) {
+          el.classList.remove('done');
+        } else {
+          el.classList.add('active');
+          el.querySelector('.step-icon').innerHTML = '<span class="spinner-step"></span>';
+          break;
+        }
+      }
+    }
+    function setConnectStepActive(stepId) {
+      var list = document.getElementById('connectStepsList');
+      list.querySelectorAll('.connect-step').forEach(function(el) {
+        var id = el.getAttribute('data-step');
+        if (id === stepId) { el.classList.add('active'); el.classList.remove('done'); el.querySelector('.step-icon').innerHTML = '<span class="spinner-step"></span>'; }
+        else if (!el.classList.contains('done')) { el.classList.remove('active'); }
+      });
+    }
+    function closeConnectProgress(log, error, isSuccess) {
+      var title = document.getElementById('connectProgressTitle');
+      if (isSuccess) title.innerHTML = 'Connected';
+      else title.innerHTML = 'Connection failed';
+      if (log) {
+        var prev = document.getElementById('connectLogPreview');
+        prev.textContent = log;
+        show(prev, true);
+      }
+      if (error) {
+        var errEl = document.getElementById('connectErrorText');
+        errEl.textContent = error;
+        show(errEl, true);
+      }
+      document.getElementById('connectCloseBtn').disabled = false;
+    }
+    function runConnectWithProgress(c, btn, doneCallback) {
+      openConnectProgress(c);
+      setConnectStepActive('ensure_services');
+      fetch(accountsApiBase() + '/connect?stream=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(c) })
+        .then(function(r) {
+          if (!r.ok) {
+            return r.text().then(function(t) {
+              var err = 'Connection failed';
+              try { var d = JSON.parse(t); if (d.error) err = d.error; } catch (e) {}
+              closeConnectProgress('', err, false);
+              if (doneCallback) doneCallback(false, err);
+              if (btn) { btn.disabled = false; btn.textContent = 'Connect'; }
+            });
+          }
+          return r;
+        })
+        .then(function(r) {
+          if (!r || !r.body) return;
+          var reader = r.body.getReader();
+          var decoder = new TextDecoder();
+          var buf = '';
+          function read() {
+            reader.read().then(function(res) {
+              if (res.done) { if (doneCallback) doneCallback(); return; }
+              buf += decoder.decode(res.value, { stream: true });
+              var parts = buf.split('\n\n');
+              buf = parts.pop();
+              parts.forEach(function(block) {
+                var line = block.split('\n').filter(function(l) { return l.indexOf('data: ') === 0; })[0];
+                if (!line) return;
+                try {
+                  var data = JSON.parse(line.slice(6));
+                  if (data.type === 'step' && data.id) setConnectStepDone(data.id, data.path); else if (data.type === 'done') {
+                    var ok = data.ok === true || data.ok === 'true';
+                    closeConnectProgress(data.log || '', data.error || '', ok);
+                    if (doneCallback) doneCallback(ok, data.error, data.log);
+                  }
+                } catch (e) {}
+              });
+              read();
+            }).catch(function(err) {
+              closeConnectProgress('', err.message, false);
+              if (doneCallback) doneCallback(false, err.message);
+            });
+          }
+          read();
+        })
+        .catch(function(err) {
+          closeConnectProgress('', err.message, false);
+          if (doneCallback) doneCallback(false, err.message);
+          if (btn) { btn.disabled = false; btn.textContent = 'Connect'; }
+        });
+    }
+
+    document.getElementById('accountsAddBtn').onclick = function() { openConfigModal(-1); };
+    document.getElementById('accountsEmptyAddBtn').onclick = function() { openConfigModal(-1); };
+    document.getElementById('configModalCancel').onclick = closeConfigModal;
+    document.getElementById('configModalSave').onclick = saveConfigModal;
+    document.getElementById('configModalOverlay').onclick = function(e) { if (e.target === this) closeConfigModal(); };
+    function openPanelProxyModal() {
+      show(document.getElementById('panelProxyModalOverlay'), true);
+    }
+    function closePanelProxyModal() {
+      show(document.getElementById('panelProxyModalOverlay'), false);
+      updatePanelProxyBadge();
+    }
+    document.getElementById('panelProxyBtn').onclick = openPanelProxyModal;
+    document.getElementById('panelProxyModalSave').onclick = closePanelProxyModal;
+    document.getElementById('panelProxyModalCancel').onclick = closePanelProxyModal;
+    document.getElementById('panelProxyModalOverlay').onclick = function(e) { if (e.target === this) closePanelProxyModal(); };
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var configOverlay = document.getElementById('configModalOverlay');
+        if (configOverlay && !configOverlay.classList.contains('hidden')) closeConfigModal();
+        else {
+          var proxyOverlay = document.getElementById('panelProxyModalOverlay');
+          if (proxyOverlay && !proxyOverlay.classList.contains('hidden')) closePanelProxyModal();
+          else {
+            var connectOverlay = document.getElementById('connectProgressOverlay');
+            if (connectOverlay && !connectOverlay.classList.contains('hidden') && !document.getElementById('connectCloseBtn').disabled) show(connectOverlay, false);
+          }
+        }
+      }
+    });
+    document.getElementById('mUsePsk').onchange = function() {
+      document.getElementById('fieldPsk').classList.toggle('hidden', !this.checked);
+    };
+    function setupPwToggle(btnId, inputId, showLabel, hideLabel) {
+      var btn = document.getElementById(btnId);
+      var inp = document.getElementById(inputId);
+      if (!btn || !inp) return;
+      btn.onclick = function() {
+        var isPass = inp.type === 'password';
+        inp.type = isPass ? 'text' : 'password';
+        btn.title = isPass ? hideLabel : showLabel;
+        btn.setAttribute('aria-label', isPass ? hideLabel : showLabel);
+      };
+    }
+    setupPwToggle('mPasswordToggle', 'mPassword', 'Show password', 'Hide password');
+    setupPwToggle('mPskToggle', 'mPsk', 'Show key', 'Hide key');
+    document.getElementById('connectCloseBtn').onclick = function() {
+      show(document.getElementById('connectProgressOverlay'), false);
+    };
+    document.getElementById('connectProgressOverlay').onclick = function(e) {
+      if (e.target === this && !document.getElementById('connectCloseBtn').disabled) show(document.getElementById('connectProgressOverlay'), false);
+    };
+
+    checkReady();
+  </script>
+</body>
+</html>

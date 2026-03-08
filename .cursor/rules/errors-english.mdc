@@ -1,0 +1,8 @@
+---
+description: All user-facing and error messages in this project must be in English.
+globs: ["**/*.go", "**/*.html", "**/*.js"]
+---
+
+- Error messages (fmt.Errorf, http.Error, JSON "error" field) must be in English.
+- Console output (fmt.Println, fmt.Printf, Fprintf to stderr) must be in English.
+- UI strings (HTML labels, button text, msg.textContent) must be in English.

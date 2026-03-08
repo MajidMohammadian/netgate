@@ -1,0 +1,11 @@
+---
+description: After editing Go sources in this project, always build the Linux binary.
+globs: ["**/*.go"]
+---
+
+When you modify any `.go` file in this project, run the Linux build so the binary is updated:
+
+- On Windows (PowerShell): `.\build-linux.ps1`
+- Or: `make build-linux` (if make is available)
+
+Output binary: `bin/netgate` (for Ubuntu/Linux).

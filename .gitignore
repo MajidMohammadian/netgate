@@ -1,0 +1,32 @@
+# Build output
+/bin/
+netgate
+netgate.exe
+*.exe
+*.test
+*.out
+
+# Dependencies
+vendor/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Runtime data (data dir when run from project root; contains configs and mirrors)
+/l2tp/
+mirrors.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editor (optional; uncomment if you do not want to commit these)
+# .idea/
+# .vscode/
+# *.swp
+# *.swo
