@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*'
+      - '[0-9]+.[0-9]+.[0-9]+'
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -20,16 +23,26 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Build Linux binary
+      - name: Build Linux binary (Ubuntu)
         run: |
           GOOS=linux GOARCH=amd64 go build -o netgate .
           mkdir -p dist
           mv netgate dist/netgate-linux-amd64
 
-      - name: Create Release
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create or update Release and upload binary
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.tag.outputs.tag }}
           files: dist/netgate-linux-amd64
-          generate_release_notes: true
+          generate_release_notes: ${{ github.event_name == 'push' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
