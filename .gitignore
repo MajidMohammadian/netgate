@@ -26,7 +26,7 @@ mirrors.json
 Thumbs.db
 
 # IDE / editor (optional; uncomment if you do not want to commit these)
-# .idea/
-# .vscode/
+.idea/
+.vscode/
 # *.swp
 # *.swo
